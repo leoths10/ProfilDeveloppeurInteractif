@@ -52,6 +52,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -65,6 +66,7 @@ import org.w3c.dom.Text
 import java.time.temporal.TemporalQuery
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,8 +75,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ProfilDeveloppeurTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ProfilScreen(
-                        profil = sampleProfil(),
+                    ProfilContainer(
                         onContactClick = {},
                         modifier = Modifier.padding(innerPadding)
                     )
@@ -379,9 +380,16 @@ fun ProfilHeader(profil: ProfilUi, modifier: Modifier = Modifier){
 @Composable
 fun ProfilScreen(
     profil: ProfilUi,
+    projects: List<ProjetUi>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    showOnlyFavorites: Boolean,
+    onToggleFavoriteFilter: () -> Unit,
+    favoriteProjectIds: List<Int>,
+    onFavoriteClick: (Int) -> Unit,
     onContactClick: () -> Unit,
     modifier: Modifier = Modifier
-){
+) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -400,14 +408,31 @@ fun ProfilScreen(
         item { SectionTitle(texte = "Compétences") }
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(profil.competences) {competence ->
+                items(profil.competences) { competence ->
                     TechnologyChip(label = competence)
                 }
             }
         }
         item { SectionTitle(texte = "Projets") }
-        items(profil.projets, key = { projet -> projet.id }) { projet ->
-            ProjetCard(projet = projet, isFavorite = false, onFavoriteClick = {})
+        item {
+            ProjectSearchField(
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange
+            )
+        }
+        item {
+            FavoriteFilterButton(
+                showOnlyFavorites = showOnlyFavorites,
+                onToggleFavoriteFilter = onToggleFavoriteFilter
+            )
+        }
+        item { ProjectCount(count = projects.size) }
+        items(projects, key = { projet -> projet.id }) { projet ->
+            ProjetCard(
+                projet = projet,
+                isFavorite = favoriteProjectIds.contains(projet.id),
+                onFavoriteClick = { onFavoriteClick(projet.id) }
+            )
         }
         item {
             ContactSection(profil = profil, onContactClick = onContactClick)
@@ -417,17 +442,39 @@ fun ProfilScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun ProfilScreenPreview() {
-    ProfilDeveloppeurTheme {
-        ProfilScreen(profil = sampleProfil(), onContactClick = {})
+fun ProfilScreenLightPreview() {
+    val profil = sampleProfil()
+    ProfilDeveloppeurTheme(darkTheme = false) {
+        ProfilScreen(
+            profil = profil,
+            projects = profil.projets,
+            searchQuery = "",
+            onSearchQueryChange = {},
+            showOnlyFavorites = false,
+            onToggleFavoriteFilter = {},
+            favoriteProjectIds = emptyList(),
+            onFavoriteClick = {},
+            onContactClick = {}
+        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun ProfilScreenDarkPreview(){
+fun ProfilScreenDarkPreview() {
+    val profil = sampleProfil()
     ProfilDeveloppeurTheme(darkTheme = true) {
-        ProfilScreen(profil = sampleProfil(), onContactClick = {})
+        ProfilScreen(
+            profil = profil,
+            projects = profil.projets,
+            searchQuery = "app",
+            onSearchQueryChange = {},
+            showOnlyFavorites = true,
+            onToggleFavoriteFilter = {},
+            favoriteProjectIds = listOf(1, 2),
+            onFavoriteClick = {},
+            onContactClick = {}
+        )
     }
 }
 
@@ -573,3 +620,24 @@ fun ProjectControlsPreview(){
     }
 }
 
+@Composable
+fun ProfilContainer(
+    onContactClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ProfilViewModel = viewModel()
+){
+        val uiState by viewModel.uiState.collectAsState()
+
+        ProfilScreen(
+            profil = uiState.profil,
+            projects = uiState.projects,
+            searchQuery = uiState.searchQuery,
+            onSearchQueryChange = viewModel::onSearchQueryChange,
+            showOnlyFavorites = uiState.showOnlyFavorites,
+            onToggleFavoriteFilter = viewModel::onToggleFavoriteFilter,
+            favoriteProjectIds = uiState.favoriteProjectIds,
+            onFavoriteClick = viewModel::onFavoriteClick,
+            onContactClick = onContactClick,
+            modifier = modifier
+        )
+    }

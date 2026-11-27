@@ -2,6 +2,7 @@ package com.example.profildeveloppeur
 
 import android.media.Image
 import android.os.Bundle
+import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -46,6 +47,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -489,7 +491,69 @@ class ProfilViewModel : ViewModel(){
             )
         }
     }
+}
 
+@Composable
+fun ProjectSearchField(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        label = { Text(text = "Rechercher un projet")},
+        leadingIcon = {
+            Icon(imageVector = Icons.Default.Search, contentDescription = null)
+        },
+        singleLine = true,
+        modifier = modifier.fillMaxWidth()
+    )
+}
 
+@Composable
+fun FavoriteFilterButton(
+    showOnlyFavorites: Boolean,
+    onToggleFavoriteFilter: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onToggleFavoriteFilter,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = if (showOnlyFavorites) {
+                "Afficher tous les projets"
+            } else {
+                "Afficher uniquement les favoris"
+            }
+        )
+    }
+}
+
+@Composable
+fun ProjectCount(count: Int, modifier: Modifier = Modifier){
+    Text(
+        text = if(count>1) "$count projets affichés" else "$count projet affiché",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = modifier
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProjectControlsPreview(){
+    ProfilDeveloppeurTheme {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ProjectSearchField(searchQuery = "php", onSearchQueryChange = {})
+            FavoriteFilterButton(
+                showOnlyFavorites = true,
+                onToggleFavoriteFilter = {},
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            ProjectCount(count = 1, modifier = Modifier.padding(top = 8.dp))
+        }
+    }
 }
 

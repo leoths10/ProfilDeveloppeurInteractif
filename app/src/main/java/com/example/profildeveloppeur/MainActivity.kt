@@ -49,6 +49,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.w3c.dom.Text
+import java.time.temporal.TemporalQuery
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +87,16 @@ data class ProfilUi(
     val localisation: String,
     val disponibilite: String
 )
+
+data class ProfilUiState(
+    val profil: ProfilUi,
+    val projects: List<ProjetUi> = emptyList(),
+    val searchQuery: String = "",
+    val showOnlyFavorites: Boolean = false,
+    val favoriteProjectIds: List<Int> = emptyList()
+)
+
+
 
 fun sampleProfil(): ProfilUi{
     return ProfilUi(
@@ -372,3 +383,4 @@ fun ProfilScreenDarkPreview(){
         ProfilScreen(profil = sampleProfil(), onContactClick = {})
     }
 }
+

@@ -42,9 +42,12 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -153,7 +156,12 @@ fun TechnologyChip(label: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ProjetCard(projet: ProjetUi, modifier: Modifier = Modifier){
+fun ProjetCard(
+    projet: ProjetUi,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier
+){
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -162,23 +170,35 @@ fun ProjetCard(projet: ProjetUi, modifier: Modifier = Modifier){
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = projet.titre,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = projet.technologies,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = projet.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = projet.titre,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = projet.technologies,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = projet.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Retirer des favoris" else "Ajouter aux favoris",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -195,7 +215,11 @@ fun TechnologyChipPreview(){
 @Composable
 fun ProjetCardPreview(){
     ProfilDeveloppeurTheme {
-        ProjetCard(projet = sampleProfil().projets.first())
+        ProjetCard(
+            projet = sampleProfil().projets.first(),
+            isFavorite = false,
+            onFavoriteClick = {}
+        )
     }
 }
 
@@ -365,7 +389,7 @@ fun ProfilScreen(
         }
         item { SectionTitle(texte = "Projets") }
         items(profil.projets, key = { projet -> projet.id }) { projet ->
-            ProjetCard(projet = projet)
+            ProjetCard(projet = projet, isFavorite = false, onFavoriteClick = {})
         }
         item {
             ContactSection(profil = profil, onContactClick = onContactClick)

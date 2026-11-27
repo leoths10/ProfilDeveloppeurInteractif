@@ -1,50 +1,68 @@
-# Profil développeur – Amélioration UI
+# Profil développeur interactif
 
 ## Description
 
-Cette application Android affiche le profil d'un développeur sur un seul écran Jetpack Compose.
-L'écran présente un avatar avec badge, un nom, un rôle, une description, une liste de
-compétences, une liste de projets et une zone de contact avec un bouton « Contacter ».
-Toutes les données sont locales et écrites directement dans le code.
+Cette application Android présente le profil d'un développeur sous forme de petit portfolio
+interactif, avec Jetpack Compose. L'utilisateur peut rechercher un projet
+(par titre, technologie ou description), marquer des projets comme favoris, n'afficher que les
+favoris et voir le nombre de projets affichés, qui se met à jour en direct. Il peut aussi
+afficher ou masquer les informations de contact. Les données sont locales, écrites dans le code
+Kotlin.
 
-## Composants Compose utilisés
+## États gérés par l'application
 
-- `Text` : titres, descriptions, informations
-- `Button` : action principale « Contacter » (le clic appelle un callback `onContactClick`)
-- `Icon` : icônes dans le badge de l'avatar et dans les champs de contact
-- `Image` : avatar placeholder (icône vectorielle `Person`)
-- `Card` : une carte par projet (`ProjectCard`)
-- `OutlinedTextField` en lecture seule : email, localisation et disponibilité
-## Layouts utilisés
+État principal, regroupé dans `ProfilUiState` et géré par le ViewModel :
+- `profil` : les informations du profil (nom, rôle, description, compétences, contact)
+- `projects` : la liste des projets **affichés** (déjà filtrée)
+- `searchQuery` : le texte de recherche
+- `showOnlyFavorites` : le filtre « favoris uniquement »
+- `favoriteProjectIds` : les identifiants des projets favoris
 
-- `Column` : structure verticale de l'en-tête et de la zone de contact
-- `Row` : alignement de l'avatar et du texte dans l'en-tête
-- `Box` : superposition du badge sur l'avatar
-- `Spacer` : espaces entre les éléments
-- `Surface` : zone de l'en-tête et fond de l'avatar et du badge
-- `LazyColumn` et `LazyRow` : listes
-## Listes avec LazyColumn et LazyRow
+État local, dans un composable :
+- `showContactInfo` : afficher ou masquer les informations de contact
 
-- **`LazyColumn`** contient tout l'écran. Elle mélange des éléments uniques (`item` : en-tête,
-  description, titres de section, contact) et une collection (`items`) : la liste des projets.
-  Chaque projet est affiché avec le composable réutilisable `ProjectCard`, et `key = { projet.id }`
-  donne une identité stable à chaque élément.
-- **`LazyRow`** affiche les compétences horizontalement. Chaque compétence est affichée avec
-  le composable `TechnologyChip`.
-## Choix de thème
+## État local
 
-- **Couleurs** : deux palettes (`lightColorScheme` et `darkColorScheme`) en vert, choisies selon
-  `isSystemInDarkTheme()`. Les composants utilisent
-  `MaterialTheme.colorScheme` et jamais de couleur écrite en dur.
-- **Typographie** : quelques styles personnalisés (`headlineMedium`, `titleLarge`, `titleMedium`,
-  `bodyMedium`, `labelLarge`).
-- **Formes** : des arrondis personnalisés (`MaterialTheme.shapes`).
-- **Clair / sombre** : deux previews permettent de comparer les deux modes.
+`showContactInfo` directement dans le composable `ContactSection`, avec `rememberSaveable`. C'est un état purement visuel : aucun autre composant n'en a besoin et il
+ne fait pas partie des données du profil, donc le mettre dans le ViewModel n'apporterait rien.
+`rememberSaveable` permet de le conserver lors d'une rotation de l'écran.
 
-## Notions du chapitre Compose UI réutilisées
+## State Hoisting
 
-Composants : (`Text`, `Button`, `Icon`, `Image`, `Card`,
-`OutlinedTextField`), layouts (`Column`, `Row`, `Box`, `Spacer`, `Surface`), listes modernes
-(`LazyColumn`, `LazyRow`, `items`, `key`), Material Design 3 (`ColorScheme`, `Typography`,
-`Shapes`) et thème clair / sombre.
- 
+`ProfilScreen` est stateless : il ne contient ni `remember`, ni ViewModel, ni StateFlow. Il reçoit
+toutes les valeurs à afficher en paramètres (`profil`, `projects`, `searchQuery`,
+`showOnlyFavorites`, `favoriteProjectIds`) et les actions sous forme de callbacks
+(`onSearchQueryChange`, `onToggleFavoriteFilter`, `onFavoriteClick`, `onContactClick`).
+Il ne décide donc pas où l'état est stocké. C'est aussi ce qui permet de le prévisualiser
+directement avec des valeurs fixes.
+
+## ViewModel
+
+`ProfilViewModel` possède l'état principal de l'écran et la logique qui le modifie : il filtre les
+projets selon la recherche et le filtre favoris, ajoute ou retire un favori, et republie un nouvel
+état à chaque action. Il ne dépend d'aucun composant Compose.
+
+## StateFlow
+
+Le ViewModel garde l'état dans un `MutableStateFlow` privé (`_uiState`) et expose une version
+publique en lecture seule (`uiState`). Quand l'utilisateur agit, une fonction du ViewModel produit
+une nouvelle copie de `ProfilUiState` avec `update` et `copy`. Le container observe ce flux avec
+`collectAsState()` : dès qu'un nouvel état est publié, Compose recompose les parties de
+l'interface qui l'utilisent, sans qu'on ait à modifier l'écran à la main.
+
+## Organisation du code
+
+- `ProfilViewModel` : possède l'état, filtre les projets et traite les actions
+- `ProfilUiState` : classe qui représente l'état complet de l'écran
+- `ProfilContainer` : récupère le ViewModel, collecte le StateFlow, transmet valeurs et callbacks
+- `ProfilScreen` : écran stateless (une `LazyColumn` complète)
+- `ProfilHeader`, `ProfilAvatar` : en-tête et avatar avec badge
+- `TechnologyChip` : une compétence (dans une `LazyRow`)
+- `ProjectCard` : un projet, avec le bouton favori
+- `ProjectSearchField`, `FavoriteFilterButton`, `ProjectCount` : recherche, filtre favoris, compteur
+- `ContactSection`, `ContactField` : zone de contact avec l'état local
+
+## Capture d'écran
+
+![Application lancée](captures/accueil.png)
+![Recherche et favoris](captures/favoris.png)

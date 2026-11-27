@@ -48,6 +48,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import org.w3c.dom.Text
 import java.time.temporal.TemporalQuery
 
@@ -382,5 +387,85 @@ fun ProfilScreenDarkPreview(){
     ProfilDeveloppeurTheme(darkTheme = true) {
         ProfilScreen(profil = sampleProfil(), onContactClick = {})
     }
+}
+
+class ProfilViewModel : ViewModel(){
+    private val profil : ProfilUi = sampleProfil()
+    private val allProjects: List<ProjetUi> = profil.projets
+
+    private val _uiState = MutableStateFlow(
+        ProfilUiState(
+            profil = profil,
+            projects = allProjects
+        )
+    )
+    val uiState: StateFlow<ProfilUiState> = _uiState.asStateFlow()
+
+    private fun filterProjects(
+        searchQuery: String,
+        showOnlyFavorites: Boolean,
+        favoriteProjectIds: List<Int>
+    ): List<ProjetUi> {
+        return allProjects.filter { projet ->
+            val matchesSearch =
+                projet.titre.contains(searchQuery, ignoreCase = true) ||
+                        projet.technologies.contains(searchQuery, ignoreCase = true) ||
+                        projet.description.contains(searchQuery, ignoreCase = true)
+
+            val matchesFavorite =
+                !showOnlyFavorites || favoriteProjectIds.contains(projet.id)
+
+            matchesSearch && matchesFavorite
+        }
+    }
+
+    fun onSearchQueryChange(newValue: String){
+        _uiState.update { currentState ->
+            currentState.copy(
+                searchQuery = newValue,
+                projects = filterProjects(
+                    searchQuery = newValue,
+                    showOnlyFavorites = currentState.showOnlyFavorites,
+                    favoriteProjectIds = currentState.favoriteProjectIds
+                )
+            )
+        }
+    }
+
+    fun onToggleFavoriteFilter(){
+        _uiState.update { currentState ->
+            val newShowOnlyFavorites = !currentState.showOnlyFavorites
+            currentState.copy(
+                showOnlyFavorites = newShowOnlyFavorites,
+                projects = filterProjects(
+                    searchQuery = currentState.searchQuery,
+                    showOnlyFavorites = newShowOnlyFavorites,
+                    favoriteProjectIds = currentState.favoriteProjectIds
+                )
+            )
+        }
+    }
+
+    fun onFavoriteClick(projectId: Int){
+        _uiState.update { currentState ->
+            val newFavoriteIds =
+                if(currentState.favoriteProjectIds.contains(projectId)) {
+                    currentState.favoriteProjectIds - projectId
+                } else {
+                    currentState.favoriteProjectIds + projectId
+                }
+
+            currentState.copy(
+                favoriteProjectIds = newFavoriteIds,
+                projects = filterProjects(
+                    searchQuery = currentState.searchQuery,
+                    showOnlyFavorites = currentState.showOnlyFavorites,
+                    favoriteProjectIds = newFavoriteIds
+                )
+            )
+        }
+    }
+
+
 }
 

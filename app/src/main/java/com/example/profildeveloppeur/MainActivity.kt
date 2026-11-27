@@ -51,6 +51,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
@@ -60,6 +63,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.w3c.dom.Text
 import java.time.temporal.TemporalQuery
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -290,22 +295,33 @@ fun ContactSection(
     onContactClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showContactInfo by rememberSaveable { mutableStateOf(false) }
+
     Column(modifier = modifier) {
         Text(
             text = "Contact",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        ContactField(label = "Email", valeur = profil.email, icone = Icons.Default.Email)
-        Spacer(modifier = Modifier.height(8.dp))
-        ContactField(label = "Localisation", valeur = profil.localisation, icone = Icons.Default.LocationOn)
-        Spacer(modifier = Modifier.height(8.dp))
-        ContactField(label = "Disponibilité", valeur = profil.disponibilite, icone = Icons.Default.Check)
-        Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = { showContactInfo = !showContactInfo}) {
+            Text(
+                text = if(showContactInfo){
+                    "Masquer les informations de contact"
+                } else{
+                    "Afficher les informations de contact"
+                }
+            )
+        }
+        if (showContactInfo){
+            ContactField(label = "Email", valeur = profil.email, icone = Icons.Default.Email, modifier = Modifier.padding(top = 8.dp))
+            ContactField(label = "Localisation", valeur = profil.localisation, icone = Icons.Default.LocationOn, modifier = Modifier.padding(top = 8.dp))
+            ContactField(label = "Disponibilité", valeur = profil.disponibilite, icone = Icons.Default.Check, modifier = Modifier.padding(top = 8.dp))
+        }
         Button(
             onClick = onContactClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
         ) {
             Text(text = "Contacter")
         }
